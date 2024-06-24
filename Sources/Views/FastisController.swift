@@ -188,6 +188,13 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
     public var shortcuts: [FastisShortcut<Value>] = []
 
     /**
+     Show or hide the default selected date header
+
+     Default value — `"true"`
+     */
+    public var shouldShowDateSelectionHeader = true
+
+    /**
      Allow to choose `nil` date
 
      When `allowToChooseNilDate` is `true`:
@@ -204,6 +211,20 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
      Default value — `"nil"`
      */
     public var dismissHandler: ((DismissAction) -> Void)?
+
+    /**
+     The block to execute when the date range is updated.
+
+     Default value — `"nil"`
+     */
+    public var dateRangeSelectionHandler: ((SelectedDateRange) -> Void)?
+
+    /**
+     The block to execute when the selected date is updated.
+
+     Default value — `"nil"`
+     */
+    public var dateSelectionHandler: ((Date?) -> Void)?
 
     /**
      And initial value which will be selected by default
@@ -297,6 +318,10 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
 
         viewController.present(navVc, animated: flag, completion: completion)
     }
+    
+    public func selectValue(_ value: Value?) {
+        selectValue(value, in: calendarView)
+    }
 
     // MARK: - Configuration
 
@@ -314,7 +339,7 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
             forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
             withReuseIdentifier: self.monthHeaderReuseIdentifier
         )
-        if !self.privateCloseOnSelectionImmediately {
+        if !self.privateCloseOnSelectionImmediately && shouldShowDateSelectionHeader {
             self.view.addSubview(self.currentValueView)
         }
         self.view.addSubview(self.weekView)
@@ -325,7 +350,7 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
     }
 
     private func configureConstraints() {
-        if !self.privateCloseOnSelectionImmediately {
+        if !self.privateCloseOnSelectionImmediately && shouldShowDateSelectionHeader {
             NSLayoutConstraint.activate([
                 self.currentValueView.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor),
                 self.currentValueView.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: 12),
@@ -449,11 +474,13 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
         switch Value.mode {
         case .single:
             let oldDate = self.value as? Date
+
             if oldDate == date, self.allowToChooseNilDate {
                 self.clear()
             } else {
                 self.value = date as? Value
                 self.selectValue(date as? Value, in: calendar)
+                dateSelectionHandler?(date)
             }
 
             if self.privateCloseOnSelectionImmediately, self.value != nil {
@@ -468,12 +495,13 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
                date.isInSameDay(in: self.config.calendar, date: oldValue.toDate)
             {
                 self.clear()
-
             } else {
 
                 let newValue: FastisRange = {
                     guard let oldValue = self.value as? FastisRange else {
-                        return .from(date.startOfDay(in: self.config.calendar), to: date.endOfDay(in: self.config.calendar))
+                        let startDate = date.startOfDay(in: self.config.calendar)
+                        dateRangeSelectionHandler?(.init(startDate: startDate, endDate: nil))
+                        return .from(startDate, to: date.endOfDay(in: self.config.calendar))
                     }
 
                     let dateRangeChangesDisabled = !self.privateAllowDateRangeChanges
@@ -482,15 +510,19 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
                         return .from(date.startOfDay(in: self.config.calendar), to: date.endOfDay(in: self.config.calendar))
                     } else if date.isInSameDay(in: self.config.calendar, date: oldValue.fromDate) {
                         let newToDate = date.endOfDay(in: self.config.calendar)
+                        dateRangeSelectionHandler?(.init(startDate: oldValue.fromDate, endDate: nil))
                         return .from(oldValue.fromDate, to: newToDate)
                     } else if date.isInSameDay(in: self.config.calendar, date: oldValue.toDate) {
                         let newFromDate = date.startOfDay(in: self.config.calendar)
+                        dateRangeSelectionHandler?(.init(startDate: newFromDate, endDate: nil))
                         return .from(newFromDate, to: oldValue.toDate)
                     } else if date < oldValue.fromDate {
                         let newFromDate = date.startOfDay(in: self.config.calendar)
+                        dateRangeSelectionHandler?(.init(startDate: newFromDate, endDate: oldValue.toDate) )
                         return .from(newFromDate, to: oldValue.toDate)
                     } else {
                         let newToDate = date.endOfDay(in: self.config.calendar)
+                        dateRangeSelectionHandler?(.init(startDate: oldValue.fromDate, endDate: newToDate))
                         return .from(oldValue.fromDate, to: newToDate)
                     }
 
@@ -498,7 +530,6 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
 
                 self.value = newValue as? Value
                 self.selectValue(newValue as? Value, in: calendar)
-
             }
 
         }
@@ -522,6 +553,8 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
 
     private func clear() {
         self.value = nil
+        self.dateRangeSelectionHandler?(.init(startDate: nil, endDate: nil))
+        self.dateSelectionHandler?(nil)
         self.viewConfigs.removeAll()
         self.calendarView.deselectAllDates()
         self.calendarView.reloadData()
@@ -802,4 +835,9 @@ public extension FastisController {
         case done(Value?)
         case cancel
     }
+}
+
+public struct SelectedDateRange {
+    public let startDate: Date?
+    public let endDate: Date?
 }
