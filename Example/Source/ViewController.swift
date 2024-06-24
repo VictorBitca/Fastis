@@ -134,8 +134,8 @@ class ViewController: UIViewController {
                 print("any actions")
             }
         }
-        fastisController.dateSelectionHandler = { date in
-            print("date \(date)")
+        fastisController.dateRangeSelectionHandler = { range in
+            print("date range:", range)
         }
         fastisController.present(above: self)
     }
@@ -156,6 +156,9 @@ class ViewController: UIViewController {
                 print("any actions")
             }
         }
+        fastisController.dateSelectionHandler = { date in
+            print("date: ", date)
+        }
         fastisController.present(above: self)
     }
 
@@ -175,8 +178,8 @@ class ViewController: UIViewController {
         fastisController.maximumDate = calendar.date(byAdding: .month, value: 3, to: Date())
         fastisController.allowToChooseNilDate = true
         fastisController.shortcuts = [.today, .lastWeek, .lastMonth]
-        fastisController.dateSelectionHandler = { date in
-            print("date \(date)")
+        fastisController.dateRangeSelectionHandler = { range in
+            print("date range: ", range)
         }
         fastisController.present(above: self)
     }

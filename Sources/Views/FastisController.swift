@@ -213,11 +213,18 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
     public var dismissHandler: ((DismissAction) -> Void)?
 
     /**
-     The block to execute when a start date is selected.
+     The block to execute when the date range is updated.
 
      Default value — `"nil"`
      */
-    public var dateSelectionHandler: ((SelectedDateRange) -> Void)?
+    public var dateRangeSelectionHandler: ((SelectedDateRange) -> Void)?
+
+    /**
+     The block to execute when the selected date is updated.
+
+     Default value — `"nil"`
+     */
+    public var dateSelectionHandler: ((Date?) -> Void)?
 
     /**
      And initial value which will be selected by default
@@ -463,11 +470,13 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
         switch Value.mode {
         case .single:
             let oldDate = self.value as? Date
+
             if oldDate == date, self.allowToChooseNilDate {
                 self.clear()
             } else {
                 self.value = date as? Value
                 self.selectValue(date as? Value, in: calendar)
+                dateSelectionHandler?(date)
             }
 
             if self.privateCloseOnSelectionImmediately, self.value != nil {
@@ -482,14 +491,12 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
                date.isInSameDay(in: self.config.calendar, date: oldValue.toDate)
             {
                 self.clear()
-                dateSelectionHandler?(.init(startDate: nil, endDate: nil))
-
             } else {
 
                 let newValue: FastisRange = {
                     guard let oldValue = self.value as? FastisRange else {
                         let startDate = date.startOfDay(in: self.config.calendar)
-                        dateSelectionHandler?(.init(startDate: startDate, endDate: nil))
+                        dateRangeSelectionHandler?(.init(startDate: startDate, endDate: nil))
                         return .from(startDate, to: date.endOfDay(in: self.config.calendar))
                     }
 
@@ -499,19 +506,19 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
                         return .from(date.startOfDay(in: self.config.calendar), to: date.endOfDay(in: self.config.calendar))
                     } else if date.isInSameDay(in: self.config.calendar, date: oldValue.fromDate) {
                         let newToDate = date.endOfDay(in: self.config.calendar)
-                        dateSelectionHandler?(.init(startDate: oldValue.fromDate, endDate: nil))
+                        dateRangeSelectionHandler?(.init(startDate: oldValue.fromDate, endDate: nil))
                         return .from(oldValue.fromDate, to: newToDate)
                     } else if date.isInSameDay(in: self.config.calendar, date: oldValue.toDate) {
                         let newFromDate = date.startOfDay(in: self.config.calendar)
-                        dateSelectionHandler?(.init(startDate: newFromDate, endDate: nil))
+                        dateRangeSelectionHandler?(.init(startDate: newFromDate, endDate: nil))
                         return .from(newFromDate, to: oldValue.toDate)
                     } else if date < oldValue.fromDate {
                         let newFromDate = date.startOfDay(in: self.config.calendar)
-                        dateSelectionHandler?(.init(startDate: newFromDate, endDate: oldValue.toDate) )
+                        dateRangeSelectionHandler?(.init(startDate: newFromDate, endDate: oldValue.toDate) )
                         return .from(newFromDate, to: oldValue.toDate)
                     } else {
                         let newToDate = date.endOfDay(in: self.config.calendar)
-                        dateSelectionHandler?(.init(startDate: oldValue.fromDate, endDate: newToDate))
+                        dateRangeSelectionHandler?(.init(startDate: oldValue.fromDate, endDate: newToDate))
                         return .from(oldValue.fromDate, to: newToDate)
                     }
 
@@ -542,6 +549,8 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
 
     private func clear() {
         self.value = nil
+        self.dateRangeSelectionHandler?(.init(startDate: nil, endDate: nil))
+        self.dateSelectionHandler?(nil)
         self.viewConfigs.removeAll()
         self.calendarView.deselectAllDates()
         self.calendarView.reloadData()
