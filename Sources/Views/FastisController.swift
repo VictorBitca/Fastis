@@ -834,6 +834,6 @@ public extension FastisController {
 }
 
 public struct SelectedDateRange {
-    let startDate: Date?
-    let endDate: Date?
+    public let startDate: Date?
+    public let endDate: Date?
 }
