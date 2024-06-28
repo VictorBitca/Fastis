@@ -318,6 +318,10 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
 
         viewController.present(navVc, animated: flag, completion: completion)
     }
+    
+    public func selectValue(_ value: Value?) {
+        selectValue(value, in: calendarView)
+    }
 
     // MARK: - Configuration
 

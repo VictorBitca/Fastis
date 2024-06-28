@@ -182,6 +182,13 @@ class ViewController: UIViewController {
             print("date range: ", range)
         }
         fastisController.present(above: self)
+
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: {
+            let one = calendar.date(byAdding: .day, value: -1, to: Date())!
+            let two = calendar.date(byAdding: .day, value: 3, to: Date())!
+            fastisController.selectValue(.init(from: one, to: two))
+        })
     }
 
     @objc
