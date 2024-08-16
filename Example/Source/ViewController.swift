@@ -54,6 +54,13 @@ class ViewController: UIViewController {
         return button
     }()
 
+    private lazy var embeddedViewController: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Embedded view controller demo", for: .normal)
+        button.addTarget(self, action: #selector(self.embeddedViewControllerPresentation), for: .touchUpInside)
+        return button
+    }()
+
     // MARK: - Variables
 
     private lazy var dateFormatter: DateFormatter = {
@@ -100,6 +107,7 @@ class ViewController: UIViewController {
         self.containerView.addArrangedSubview(self.chooseSingleButton)
         self.containerView.addArrangedSubview(self.chooseRangeButtonWithCustomCalendar)
         self.containerView.addArrangedSubview(self.chooseWithSwiftUI)
+        self.containerView.addArrangedSubview(self.embeddedViewController)
         self.view.addSubview(self.containerView)
     }
 
@@ -199,4 +207,12 @@ class ViewController: UIViewController {
         navVC?.pushViewController(hostingController, animated: true)
     }
 
+
+    @objc
+    private func embeddedViewControllerPresentation() {
+        let viewController = EmbeddedCalendarViewController()
+        viewController.modalPresentationStyle = .custom
+        let navVC = self.parent as? UINavigationController
+        navVC?.pushViewController(viewController, animated: true)
+    }
 }

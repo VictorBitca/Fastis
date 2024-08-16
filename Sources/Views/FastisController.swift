@@ -549,6 +549,7 @@ open class FastisController<Value: FastisValue>: UIViewController, JTACMonthView
                 calendar.reloadItems(at: (segment.outdates + segment.indates).map(\.indexPath))
             }
         }
+        dateRangeSelectionHandler?(.init(startDate: range.fromDate, endDate: range.toDate))
     }
 
     private func clear() {
